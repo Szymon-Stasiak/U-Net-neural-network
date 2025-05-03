@@ -29,10 +29,10 @@ def extract_gland_polygons(xml_path, output_dir):
 
 def prepare_unet_data(data_path):
     images_dir = Path(data_path) / "images" / "train"
-    labels_dir = Path(data_path) / "labels" / "train"
+    labels_dir = Path(data_path) / "masks" / "train"
     polygons_dir = Path(data_path) / "gland_polygons"
     output_images_dir = Path(data_path) / "shaped" / "images"
-    output_labels_dir = Path(data_path) / "shaped" / "labels"
+    output_labels_dir = Path(data_path) / "shaped" / "masks"
 
     output_images_dir.mkdir(parents=True, exist_ok=True)
     output_labels_dir.mkdir(parents=True, exist_ok=True)
