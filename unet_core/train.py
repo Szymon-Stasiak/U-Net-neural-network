@@ -18,7 +18,7 @@ IMG_HEIGHT = 1280
 IMG_WIDTH = 1918
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 16
-NUM_EPOCHS = 10
+NUM_EPOCHS = 4
 NUM_WORKERS = 4
 PIN_MEMORY = True
 LOAD_MODEL = False
@@ -49,7 +49,7 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
 def main():
     train_transform = A.Compose(
         [
-            A.Resize(height=256, width=256),
+            A.Resize(height=124, width=124),
             A.Rotate(limit=35, p=1.0),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.1),
@@ -65,7 +65,7 @@ def main():
 
     val_transform = A.Compose(
         [
-            A.Resize(height=256, width=256),
+            A.Resize(height=124, width=124),
             A.Normalize(
                 mean=(0.0, 0.0, 0.0),
                 std=(1.0, 1.0, 1.0),
