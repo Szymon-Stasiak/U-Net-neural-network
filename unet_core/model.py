@@ -20,8 +20,10 @@ class DoubleConv(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=1, features=[64, 128, 256, 512, 1024]):
+    def __init__(self, in_channels=3, out_channels=1, features=None):
         super(UNet, self).__init__()
+        if features is None:
+            features = [64, 128, 256, 512]
         self.encoder = nn.ModuleList()
         self.decoder = nn.ModuleList()
         self.poll = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -56,8 +58,25 @@ class UNet(nn.Module):
             x = self.decoder[idx](x)
             skip_connection = skip_connections[idx // 2]
             if x.shape != skip_connection.shape:
-                  x = F.interpolate(x, size=skip_connection.shape[2:], mode='bilinear', align_corners=True)
+                x = F.interpolate(x, size=skip_connection.shape[2:], mode='bilinear', align_corners=True)
             concat_skip = torch.cat((skip_connection, x), dim=1)
             x = self.decoder[idx + 1](concat_skip)
 
         return self.final_conv(x)
+
+    # def binary_cross_entropy_loss(pred, target):
+    #     return F.binary_cross_entropy_with_logits(pred, target)
+    #
+    # def dice_loss(pred, target, smooth=1e-6):
+    #     pred = torch.sigmoid(pred)  #
+    #
+    #     intersection = (pred * target).sum()
+    #     union = pred.sum() + target.sum()
+    #
+    #     return 1 - (2. * intersection + smooth) / (union + smooth)
+    #
+    # def combined_loss(pred, target, alpha=0.5, smooth=1e-6):
+    #     bce_loss = F.binary_cross_entropy_with_logits(pred, target)
+    #     dice_loss_value = pred.dice_loss(pred, target, smooth)
+    #
+    #     return alpha * bce_loss + (1 - alpha) * dice_loss_value
