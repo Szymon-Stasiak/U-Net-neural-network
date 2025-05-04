@@ -26,7 +26,7 @@ class UNet(nn.Module):
             features = [64, 128, 256, 512]
         self.encoder = nn.ModuleList()
         self.decoder = nn.ModuleList()
-        self.poll = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
         # Encoder
         for feature in features:
@@ -49,7 +49,7 @@ class UNet(nn.Module):
         for encoder in self.encoder:
             x = encoder(x)
             skip_connections.append(x)
-            x = self.poll(x)
+            x = self.pool(x)
 
         x = self.bottleneck(x)
         skip_connections = skip_connections[::-1]
@@ -63,20 +63,3 @@ class UNet(nn.Module):
             x = self.decoder[idx + 1](concat_skip)
 
         return self.final_conv(x)
-
-    # def binary_cross_entropy_loss(pred, target):
-    #     return F.binary_cross_entropy_with_logits(pred, target)
-    #
-    # def dice_loss(pred, target, smooth=1e-6):
-    #     pred = torch.sigmoid(pred)  #
-    #
-    #     intersection = (pred * target).sum()
-    #     union = pred.sum() + target.sum()
-    #
-    #     return 1 - (2. * intersection + smooth) / (union + smooth)
-    #
-    # def combined_loss(pred, target, alpha=0.5, smooth=1e-6):
-    #     bce_loss = F.binary_cross_entropy_with_logits(pred, target)
-    #     dice_loss_value = pred.dice_loss(pred, target, smooth)
-    #
-    #     return alpha * bce_loss + (1 - alpha) * dice_loss_value

@@ -13,26 +13,11 @@ from utils import (
     save_predictions_as_imgs,
 )
 
-LEARNING_RATE = 1e-4
-IMG_HEIGHT = 1280
-IMG_WIDTH = 1918
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 16
-NUM_EPOCHS = 4
-NUM_WORKERS = 4
-PIN_MEMORY = True
-LOAD_MODEL = False
-TRAIN_IMG_DIR = "../data/shaped/images"
-TRAIN_MASK_DIR = "../data/shaped/masks"
-VAL_IMG_DIR = "../data/shaped/images"
-VAL_MASK_DIR = "../data/shaped/masks"
-
-
-def train_fn(loader, model, optimizer, loss_fn, scaler):
+def train_fn(loader, model, optimizer, loss_fn, scaler, device="cuda" if torch.cuda.is_available() else "cpu"):
     loop = tqdm(loader)
     for batch_idx, (data, targets) in enumerate(loop):
-        data = data.to(device=DEVICE)
-        targets = targets.float().unsqueeze(1).to(device=DEVICE)
+        data = data.to(device=device)
+        targets = targets.float().unsqueeze(1).to(device=device)
 
         with torch.amp.autocast('cuda'):
             predictions = model(data)
@@ -46,10 +31,24 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
         loop.set_postfix(loss=loss.item())
 
 
-def main():
+def train_process(
+    train_img_dir="../data/shaped/images",
+    train_mask_dir="../data/shaped/masks",
+    val_img_dir="../data/shaped/images",
+    val_mask_dir="../data/shaped/masks",
+    learning_rate=1e-4,
+    img_height=256,
+    img_width=1918,
+    batch_size=16,
+    num_epochs=30,
+    num_workers=4,
+    pin_memory=True,
+    load_model=False,
+    device="cuda" if torch.cuda.is_available() else "cpu",
+):
     train_transform = A.Compose(
         [
-            A.Resize(height=124, width=124),
+            A.Resize(height=img_height, width=img_height),
             A.Rotate(limit=35, p=1.0),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.1),
@@ -65,7 +64,7 @@ def main():
 
     val_transform = A.Compose(
         [
-            A.Resize(height=124, width=124),
+            A.Resize(height=img_height, width=img_height),
             A.Normalize(
                 mean=(0.0, 0.0, 0.0),
                 std=(1.0, 1.0, 1.0),
@@ -75,41 +74,46 @@ def main():
         ]
     )
 
-    model = UNet(in_channels=3, out_channels=1).to(DEVICE)
+    model = UNet(in_channels=3, out_channels=1).to(device)
     loss_fn = nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     train_loader, val_loader = get_loaders(
-        train_img_dir=TRAIN_IMG_DIR,
-        train_mask_dir=TRAIN_MASK_DIR,
-        val_img_dir=VAL_IMG_DIR,
-        val_mask_dir=VAL_MASK_DIR,
-        batch_size=BATCH_SIZE,
+        train_img_dir=train_img_dir,
+        train_mask_dir=train_mask_dir,
+        val_img_dir=val_img_dir,
+        val_mask_dir=val_mask_dir,
+        batch_size=batch_size,
         train_transform=train_transform,
         val_transform=val_transform,
-        num_workers=NUM_WORKERS,
-        pin_memory=PIN_MEMORY,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
     )
 
-    if LOAD_MODEL:
-        load_checkpoint(torch.load("my_checkpoint.pth.tar"), model, optimizer)
+    if load_model:
+        load_checkpoint(torch.load("GlandFinder.pth.tar"), model, optimizer)
 
-    check_accuracy(val_loader, model, device=DEVICE)
+    best_dice_score = 0
+    scaler = torch.amp.GradScaler(device if device == "cuda" else "cpu")
 
-    scaler = torch.amp.GradScaler('cuda' if torch.cuda.is_available() else 'cpu')
-    for epoch in range(NUM_EPOCHS):
-        print(f"Epoch {epoch + 1}/{NUM_EPOCHS}")
-        train_fn(train_loader, model, optimizer, loss_fn, scaler)
+    for epoch in range(num_epochs):
+        print(f"Epoch {epoch + 1}/{num_epochs}")
+        train_fn(train_loader, model, optimizer, loss_fn, scaler, device)
 
-        checkpoint = {
-            "state_dict": model.state_dict(),
-            "optimizer": optimizer.state_dict(),
-        }
-        save_checkpoint(checkpoint)
+        dice_score = check_accuracy(val_loader, model, device=device)
 
-        check_accuracy(val_loader, model, device=DEVICE)
-        save_predictions_as_imgs(val_loader, model, folder="saved_images/", device=DEVICE)
+        if dice_score > best_dice_score:
+            print(f"New best Dice score: {dice_score:.4f}. Saving checkpoint.")
+            best_dice_score = dice_score
+            checkpoint = {
+                "state_dict": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+            }
+            save_checkpoint(checkpoint)
+        else:
+            print("No improvement in Dice score. Skipping checkpoint save.")
 
+        save_predictions_as_imgs(val_loader, model, folder="saved_images/", device=device)
 
 if __name__ == "__main__":
-    main()
+    train_process()
