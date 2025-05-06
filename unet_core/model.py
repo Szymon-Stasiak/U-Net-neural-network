@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from utils import load_checkpoint
+import os
 
 
 class DoubleConv(nn.Module):
@@ -17,7 +19,6 @@ class DoubleConv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
-
 
 class UNet(nn.Module):
     def __init__(self, in_channels=3, out_channels=1, features=None):
@@ -63,3 +64,17 @@ class UNet(nn.Module):
             x = self.decoder[idx + 1](concat_skip)
 
         return self.final_conv(x)
+
+    def load_pretrained_model(self, name="GlandsFinder", device="cuda"):
+        filename = name + ".pth.tar"
+        if not os.path.isfile(filename):
+            print(f"Model with name {name} doesn't exist")
+            return None
+
+        print("Chosen model successfully found")
+        optimizer =torch.optim.Adam(self.parameters(), lr=1e-4)
+        checkpoint = torch.load(filename, map_location=device)
+        load_checkpoint(checkpoint, self, optimizer)
+        self.eval()
+        return self
+
