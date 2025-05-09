@@ -97,16 +97,14 @@ class TestUNet(unittest.TestCase):
         out_channels = 1
         input_tensor = torch.randn(batch_size, in_channels, 128, 128)
 
-        # Instantiate the model
         model = UNet(in_channels, out_channels)
 
-        # Get the encoder outputs
         skip_connections = []
         x = input_tensor
         for encoder in model.encoder:
             x = encoder(x)
             skip_connections.append(x)
-            x = model.poll(x)
+            x = model.pool(x)
 
         x = model.bottleneck(x)
         skip_connections = skip_connections[::-1]

@@ -1,1 +1,1 @@
-from .model import UNet
+from unet_core.model import UNet

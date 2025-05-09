@@ -4,8 +4,8 @@ from albumentations.pytorch import ToTensorV2
 from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
-from model import UNet
-from utils import (
+from unet_core.model import UNet
+from unet_core.utils import (
     load_checkpoint,
     save_checkpoint,
     get_loaders,
@@ -45,6 +45,7 @@ def train_process(
     pin_memory=True,
     load_model=False,
     device="cuda" if torch.cuda.is_available() else "cpu",
+    save_predictions=False,
 ):
     train_transform = A.Compose(
         [
@@ -113,7 +114,7 @@ def train_process(
         else:
             print("No improvement in Dice score. Skipping checkpoint save.")
 
-        save_predictions_as_imgs(val_loader, model, folder="saved_images/", device=device)
+        if save_predictions:
+            save_predictions_as_imgs(val_loader, model, folder="saved_images/", device=device)
 
-if __name__ == "__main__":
-    train_process()
+        model.train()

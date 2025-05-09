@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import load_checkpoint
+from unet_core.utils import load_checkpoint
 import os
 
 
@@ -19,6 +19,7 @@ class DoubleConv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
+
 
 class UNet(nn.Module):
     def __init__(self, in_channels=3, out_channels=1, features=None):
@@ -72,9 +73,8 @@ class UNet(nn.Module):
             return None
 
         print("Chosen model successfully found")
-        optimizer =torch.optim.Adam(self.parameters(), lr=1e-4)
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-4)
         checkpoint = torch.load(filename, map_location=device)
         load_checkpoint(checkpoint, self, optimizer)
         self.eval()
         return self
-

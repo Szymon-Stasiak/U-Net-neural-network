@@ -1,6 +1,6 @@
 import torch
 import torchvision
-from dataset.LearnSet import LearnSet
+from unet_core.dataset.LearnSet import LearnSet
 from torch.utils.data import DataLoader
 import os
 
@@ -51,7 +51,7 @@ def check_accuracy(loader, model, device="cpu"):
             num_correct += (preds == y).sum()
             num_pixels += torch.numel(preds)
             dice_score += (2 * (preds * y).sum()) / (
-                (preds + y).sum() + 1e-8
+                    (preds + y).sum() + 1e-8
             )
 
     acc = num_correct / num_pixels * 100
@@ -62,7 +62,6 @@ def check_accuracy(loader, model, device="cpu"):
     return avg_dice
 
 
-
 def save_predictions_as_imgs(loader, model, folder="saved_images/", device="cpu"):
     model.eval()
     os.makedirs(folder, exist_ok=True)
@@ -71,13 +70,7 @@ def save_predictions_as_imgs(loader, model, folder="saved_images/", device="cpu"
         with torch.no_grad():
             preds = torch.sigmoid(model(x))
             preds = (preds > 0.5).float()
-        # torchvision.utils.save_image(preds * 255, f"{folder}/pred_{idx}.tif")
-        #
-        # torchvision.utils.save_image(y.unsqueeze(1), f"{folder}{idx}.tif")
         torchvision.utils.save_image(
             preds, f"{folder}/pred_{idx}.png"
         )
         torchvision.utils.save_image(y.unsqueeze(1), f"{folder}{idx}.png")
-
-    model.train()
-

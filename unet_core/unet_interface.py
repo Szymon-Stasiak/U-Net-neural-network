@@ -1,12 +1,11 @@
 import torch
-import torchvision.transforms.functional as TF
 import numpy as np
-from model import UNet as UNetArchitecture
-from train import train_process
+from unet_core.model import UNet as UNetArchitecture
+from unet_core.train import train_process
 from PIL import Image
 import os
 import cv2
-from imgProcessor import prepare_image, get_binary_mask, get_contours_from_mask
+from unet_core.imgProcessor import prepare_image, get_binary_mask, get_contours_from_mask
 
 
 class UNET:
