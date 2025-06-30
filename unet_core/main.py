@@ -1,6 +1,5 @@
 
 from unet_interface import UNET
-import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 
@@ -11,7 +10,7 @@ if __name__ == '__main__':
     # # Training
     # UNET.modelTrain(num_epochs=4)
 
-    model = UNET._model(name="test_model")
+    model = UNET._model(name="GlandsFInder")
     outlined_image = UNET.find("C:/Users/stszy/PycharmProjects/U-Net-neural-network/data/shaped/images/tile_12544_53760_7.tif")
     image_np = np.array(outlined_image)
     cv2.imshow("Mask", cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
