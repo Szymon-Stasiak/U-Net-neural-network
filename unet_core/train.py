@@ -1,3 +1,5 @@
+import os
+
 import torch
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -12,6 +14,7 @@ from unet_core.utils import (
     check_accuracy,
     save_predictions_as_imgs,
 )
+
 
 def train_fn(loader, model, optimizer, loss_fn, scaler, device="cuda" if torch.cuda.is_available() else "cpu"):
     loop = tqdm(loader)
@@ -32,24 +35,24 @@ def train_fn(loader, model, optimizer, loss_fn, scaler, device="cuda" if torch.c
 
 
 def train_process(
-    train_img_dir="../data/shaped/images",
-    train_mask_dir="../data/shaped/masks",
-    val_img_dir="../data/shaped/images",
-    val_mask_dir="../data/shaped/masks",
-    learning_rate=1e-4,
-    img_height=256,
-    img_width=1918,
-    batch_size=16,
-    num_epochs=30,
-    num_workers=4,
-    pin_memory=True,
-    load_model=False,
-    device="cuda" if torch.cuda.is_available() else "cpu",
-    save_predictions=False,
+        train_img_dir="../data/shaped/images",
+        train_mask_dir="../data/shaped/masks",
+        val_img_dir="../data/shaped/images",
+        val_mask_dir="../data/shaped/masks",
+        learning_rate=1e-4,
+        img_height=256,
+        img_width=1918,
+        batch_size=16,
+        num_epochs=30,
+        num_workers=4,
+        pin_memory=True,
+        load_model=False,
+        device="cuda" if torch.cuda.is_available() else "cpu",
+        save_predictions=False,
 ):
     train_transform = A.Compose(
         [
-            A.Resize(height=img_height, width=img_height),
+            A.Resize(height=img_height, width=img_width),
             A.Rotate(limit=35, p=1.0),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.1),
@@ -65,7 +68,7 @@ def train_process(
 
     val_transform = A.Compose(
         [
-            A.Resize(height=img_height, width=img_height),
+            A.Resize(height=img_height, width=img_width),
             A.Normalize(
                 mean=(0.0, 0.0, 0.0),
                 std=(1.0, 1.0, 1.0),
@@ -96,6 +99,7 @@ def train_process(
 
     best_dice_score = 0
     scaler = torch.amp.GradScaler(device if device == "cuda" else "cpu")
+    checkpoint_path = "my_checkpoint.pth.tar"
 
     for epoch in range(num_epochs):
         print(f"Epoch {epoch + 1}/{num_epochs}")
@@ -110,6 +114,10 @@ def train_process(
                 "state_dict": model.state_dict(),
                 "optimizer": optimizer.state_dict(),
             }
+
+            if os.path.exists(checkpoint_path):
+                os.remove(checkpoint_path)
+
             save_checkpoint(checkpoint)
         else:
             print("No improvement in Dice score. Skipping checkpoint save.")
@@ -118,3 +126,5 @@ def train_process(
             save_predictions_as_imgs(val_loader, model, folder="saved_images/", device=device)
 
         model.train()
+
+    return model

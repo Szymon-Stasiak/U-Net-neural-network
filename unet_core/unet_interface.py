@@ -9,43 +9,28 @@ from unet_core.imgProcessor import prepare_image, get_binary_mask, get_contours_
 
 
 class UNET:
-    _loaded_model = None
-    _device = "cuda" if torch.cuda.is_available() else "cpu"
-    _img_height = 256
-    _img_width = 256
+    def __init__(self, device=None, img_height=256, img_width=256):
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.img_height = img_height
+        self.img_width = img_width
+        self.model = None
 
-    @staticmethod
-    def _model(in_channels=3, out_channels=1, features=None, name=None, img_height=_img_height, img_width=_img_width):
-        model = UNetArchitecture(in_channels=in_channels, out_channels=out_channels, features=features)
-        model = model.to(UNET._device)
-
+    def set_model(self, in_channels=3, out_channels=1, features=None, name=None):
+        self.model = UNetArchitecture(in_channels=in_channels, out_channels=out_channels, features=features).to(
+            self.device)
         if name:
-            model = model.load_pretrained_model(name=name, device=UNET._device)
-        UNET._img_height = img_height
-        UNET._img_width = img_width
-        UNET._loaded_model = model
-        return model
+            self.model = self.model.load_pretrained_model(name=name, device=self.device)
 
-    @staticmethod
-    def _model_train(**kwargs):
-        UNET._img_height = kwargs.get('img_height', UNET._img_height)
-        UNET._img_width = kwargs.get('img_width', UNET._img_width)
-        kwargs['img_height'] = UNET._img_height
-        kwargs['img_width'] = UNET._img_width
+    def train_model(self, **kwargs):
+        kwargs['img_height'] = kwargs.get('img_height', self.img_height)
+        kwargs['img_width'] = kwargs.get('img_width', self.img_width)
+        kwargs['device'] = self.device
         print("Starting training with parameters:", kwargs)
-        train_process(**kwargs)
+        self.model = train_process(**kwargs)
 
-    @staticmethod
-    def find(image_path):
-        assert UNET._loaded_model is not None, "Error: No pretrained model loaded. Call UNET._model(name='...') first or train your own."
-        assert os.path.exists(image_path), f"Image file not found: {image_path}"
-
-        original_image, image_tensor = prepare_image(image_path, UNET._img_width, UNET._img_height, UNET._device)
-
-        with torch.no_grad():
-            preds = torch.sigmoid(UNET._loaded_model(image_tensor))
-            preds = (preds > 0.5).float()
-        pred_mask = preds.squeeze().cpu().numpy().astype(np.uint8) * 255  # shape: H x W
+    def find(self, image_path):
+        original_image, preds = self.check_data(image_path)
+        pred_mask = preds.squeeze().cpu().numpy().astype(np.uint8) * 255
         resized_mask = cv2.resize(
             pred_mask,
             (original_image.width, original_image.height),
@@ -53,22 +38,8 @@ class UNET:
         )
         return resized_mask
 
-    @staticmethod
-    def find_edges(image_path, color=(255, 0, 0)):
-        assert UNET._loaded_model is not None, "Error: No pretrained model loaded. Call UNET._model(name='...') first or train your own."
-        assert os.path.exists(image_path), f"Image file not found: {image_path}"
-
-        original_image, image_tensor = prepare_image(image_path, UNET._img_width, UNET._img_height, UNET._device)
-
-        with torch.no_grad():
-            preds = torch.sigmoid(UNET._loaded_model(image_tensor))
-            preds = (preds > 0.5).float()
-
-        mask = get_binary_mask(preds)
-        contours = get_contours_from_mask(mask)
-
-        scale_x = original_image.width / UNET._img_width
-        scale_y = original_image.height / UNET._img_height
+    def find_edges(self, image_path, color=(255, 0, 0)):
+        contours, original_image, scale_x, scale_y = self.get_mask(image_path)
 
         scaled_contours = [
             np.array([[int(pt[0][0] * scale_x), int(pt[0][1] * scale_y)] for pt in cnt]).reshape(-1, 1, 2)
@@ -83,22 +54,8 @@ class UNET:
         result_image = Image.fromarray(cv2.cvtColor(image_cv, cv2.COLOR_BGR2RGB)).resize(original_image.size)
         return result_image
 
-    @staticmethod
-    def find_points(image_path):
-        assert UNET._loaded_model is not None, "Error: No pretrained model loaded. Call UNET._model(name='...') first or train your own."
-        assert os.path.exists(image_path), f"Image file not found: {image_path}"
-
-        original_image, image_tensor = prepare_image(image_path, UNET._img_width, UNET._img_height, UNET._device)
-
-        with torch.no_grad():
-            preds = torch.sigmoid(UNET._loaded_model(image_tensor))
-            preds = (preds > 0.5).float()
-
-        mask = get_binary_mask(preds)
-        contours = get_contours_from_mask(mask)
-
-        scale_x = original_image.width / UNET._img_width
-        scale_y = original_image.height / UNET._img_height
+    def find_points(self, image_path):
+        contours, original_image, scale_x, scale_y = self.get_mask(image_path)
 
         all_points = []
         for cnt in contours:
@@ -106,3 +63,20 @@ class UNET:
             all_points.append(points)
 
         return all_points
+
+    def get_mask(self, image_path):
+        original_image, preds = self.check_data(image_path)
+        mask = get_binary_mask(preds)
+        contours = get_contours_from_mask(mask)
+        scale_x = original_image.width / self.img_width
+        scale_y = original_image.height / self.img_height
+        return contours, original_image, scale_x, scale_y
+
+    def check_data(self, image_path):
+        assert self.model is not None, "Error: No pretrained model loaded. Call set_model() first or train your own."
+        assert os.path.exists(image_path), f"Image file not found: {image_path}"
+        original_image, image_tensor = prepare_image(image_path, self.img_width, self.img_height, self.device)
+        with torch.no_grad():
+            preds = torch.sigmoid(self.model(image_tensor))
+            preds = (preds > 0.5).float()
+        return original_image, preds

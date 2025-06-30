@@ -1,0 +1,10 @@
+torch~=2.7.0
+unet_core~=0.1.0
+pillow~=11.2.1
+pytest~=8.3.5
+setuptools~=80.1.0
+numpy~=2.2.5
+opencv-python~=4.11.0.86
+albumentations~=2.0.6
+tqdm~=4.67.1
+torchvision~=0.22.0
