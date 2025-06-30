@@ -5,7 +5,7 @@ from unet_core.train import train_process
 from PIL import Image
 import os
 import cv2
-from unet_core.imgProcessor import prepare_image, get_binary_mask, get_contours_from_mask
+from unet_core.img_processor import prepare_image, get_binary_mask, get_contours_from_mask
 
 
 class UNET:

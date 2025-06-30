@@ -1,6 +1,6 @@
 import torch
 import torchvision
-from unet_core.dataset.LearnSet import LearnSet
+from unet_core.dataset.learn_set import LearnSet
 from torch.utils.data import DataLoader
 import os
 

@@ -7,6 +7,7 @@ import shutil
 from PIL import Image
 from unet_core.utils import check_accuracy, save_predictions_as_imgs
 
+
 class DummyModel(nn.Module):
     def __init__(self):
         super().__init__()
