@@ -3,7 +3,6 @@ import numpy as np
 from unet_core.model import UNet as UNetArchitecture
 from unet_core.train import train_process
 from PIL import Image
-import os
 import cv2
 from unet_core.img_processor import prepare_image, get_binary_mask, get_contours_from_mask
 
@@ -28,8 +27,8 @@ class UNET:
         print("Starting training with parameters:", kwargs)
         self.model = train_process(**kwargs)
 
-    def find(self, image_path):
-        original_image, preds = self.check_data(image_path)
+    def find(self, image: Image.Image):
+        original_image, preds = self.check_data(image)
         pred_mask = preds.squeeze().cpu().numpy().astype(np.uint8) * 255
         resized_mask = cv2.resize(
             pred_mask,
@@ -38,8 +37,8 @@ class UNET:
         )
         return resized_mask
 
-    def find_edges(self, image_path, color=(255, 0, 0)):
-        contours, original_image, scale_x, scale_y = self.get_mask(image_path)
+    def find_edges(self, image: Image.Image, color=(255, 0, 0)):
+        contours, original_image, scale_x, scale_y = self.get_mask(image)
 
         scaled_contours = [
             np.array([[int(pt[0][0] * scale_x), int(pt[0][1] * scale_y)] for pt in cnt]).reshape(-1, 1, 2)
@@ -54,8 +53,8 @@ class UNET:
         result_image = Image.fromarray(cv2.cvtColor(image_cv, cv2.COLOR_BGR2RGB)).resize(original_image.size)
         return result_image
 
-    def find_points(self, image_path):
-        contours, original_image, scale_x, scale_y = self.get_mask(image_path)
+    def find_points(self, image: Image.Image):
+        contours, original_image, scale_x, scale_y = self.get_mask(image)
 
         all_points = []
         for cnt in contours:
@@ -64,18 +63,17 @@ class UNET:
 
         return all_points
 
-    def get_mask(self, image_path):
-        original_image, preds = self.check_data(image_path)
+    def get_mask(self, image: Image.Image):
+        original_image, preds = self.check_data(image)
         mask = get_binary_mask(preds)
         contours = get_contours_from_mask(mask)
         scale_x = original_image.width / self.img_width
         scale_y = original_image.height / self.img_height
         return contours, original_image, scale_x, scale_y
 
-    def check_data(self, image_path):
+    def check_data(self, image: Image.Image):
         assert self.model is not None, "Error: No pretrained model loaded. Call set_model() first or train your own."
-        assert os.path.exists(image_path), f"Image file not found: {image_path}"
-        original_image, image_tensor = prepare_image(image_path, self.img_width, self.img_height, self.device)
+        original_image, image_tensor = prepare_image(image, self.img_width, self.img_height, self.device)
         with torch.no_grad():
             preds = torch.sigmoid(self.model(image_tensor))
             preds = (preds > 0.5).float()

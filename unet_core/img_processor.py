@@ -2,13 +2,21 @@ import cv2
 from PIL import Image
 import torchvision.transforms.functional as TF
 import numpy as np
+from torchvision import transforms
 
 
-def prepare_image(image_path, img_width, img_height, device):
-    image = Image.open(image_path).convert("RGB")
-    resized = image.resize((img_width, img_height))
-    tensor = TF.to_tensor(resized).unsqueeze(0).to(device)
-    return image, tensor
+def load_image_from_path(path):
+    return Image.open(path).convert("RGB")
+
+
+def prepare_image(image, img_width, img_height, device):
+    original_image = image.copy()
+    transform = transforms.Compose([
+        transforms.Resize((img_height, img_width)),
+        transforms.ToTensor(),
+    ])
+    image_tensor = transform(image).unsqueeze(0).to(device)
+    return original_image, image_tensor
 
 
 def get_binary_mask(preds):
