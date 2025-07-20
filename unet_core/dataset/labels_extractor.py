@@ -26,68 +26,68 @@ def extract_gland_polygons(xml_path, output_dir):
 
     print(f"Saved to file : {output_dir}")
 
+import cv2
+import numpy as np
+from pathlib import Path
 
 def prepare_unet_data(data_path):
-    images_dir = Path(data_path) / "images" / "train"
-    labels_dir = Path(data_path) / "masks" / "train"
-    polygons_dir = Path(data_path) / "gland_polygons"
-    output_images_dir = Path(data_path) / "shaped" / "images"
-    output_labels_dir = Path(data_path) / "shaped" / "masks"
+    data_path = Path(data_path)
+    images_dir = data_path / "images" / "train"
+    labels_dir = data_path / "labels" / "train"
 
+    output_images_dir = data_path / "shaped" / "images"
+    output_labels_dir = data_path / "shaped" / "masks"
     output_images_dir.mkdir(parents=True, exist_ok=True)
     output_labels_dir.mkdir(parents=True, exist_ok=True)
 
     for image_path in images_dir.glob("*.tif"):
-        image = np.array(Image.open(image_path))
-        h, w = image.shape[:2]
+        image = cv2.imread(str(image_path))
+        if image is None:
+            print(f"❌ Nie udało się wczytać obrazu: {image_path}")
+            continue
+
+        height, width = image.shape[:2]
         base_name = image_path.stem
+        label_path = labels_dir / f"{base_name}.txt"
 
-        yolo_label_path = labels_dir / f"{base_name}.txt"
-        polygon_path = polygons_dir / f"{base_name}.txt"
-        if not yolo_label_path.exists() or not polygon_path.exists():
+        if not label_path.exists():
             continue
 
-        with open(polygon_path, 'r') as f:
-            polygon_lines = f.readlines()
+        with open(label_path, "r") as f:
+            lines = [line.strip() for line in f.readlines() if line.strip()]
 
-        with open(yolo_label_path, 'r') as f:
-            bbox_lines = f.readlines()
+        for idx, line in enumerate(lines):
+            try:
+                points = [tuple(map(float, p.split(","))) for p in line.split(";")]
+                x_coords, y_coords = zip(*points)
 
-        if len(polygon_lines) != len(bbox_lines):
-            print(f"Invalid data: {base_name} — {len(bbox_lines)} boxes, {len(polygon_lines)} mask")
-            continue
+                xmin = max(0, int(min(x_coords)))
+                xmax = min(width, int(max(x_coords)))
+                ymin = max(0, int(min(y_coords)))
+                ymax = min(height, int(max(y_coords)))
 
-        for i, (bbox_line, polygon_line) in enumerate(zip(bbox_lines, polygon_lines)):
-            cls, x_center, y_center, bw, bh = map(float, bbox_line.strip().split())
-            x_center *= w
-            y_center *= h
-            bw *= w
-            bh *= h
-            x1 = int(x_center - bw / 2)
-            y1 = int(y_center - bh / 2)
-            x2 = int(x_center + bw / 2)
-            y2 = int(y_center + bh / 2)
+                if xmax <= xmin or ymax <= ymin:
+                    print(f"⚠️ Pominięto pusty wycinek w pliku {label_path}, linia {idx}")
+                    continue
 
-            cropped_img = image[y1:y2, x1:x2]
+                cropped_img = image[ymin:ymax, xmin:xmax]
+                output_img_path = output_images_dir / f"{base_name}_{idx}.jpg"
+                cv2.imwrite(str(output_img_path), cropped_img)
 
-            mask = np.zeros((y2 - y1, x2 - x1), dtype=np.uint8)
-            poly_points = np.array([list(map(float, p.split(","))) for p in polygon_line.strip().split(";")])
-            poly_points[:, 0] -= x1
-            poly_points[:, 1] -= y1
-            cv2.fillPoly(mask, [poly_points.astype(np.int32)], color=255)
+                mask = np.zeros((height, width), dtype=np.uint8)
+                points_np = np.array([points], dtype=np.int32)
+                cv2.fillPoly(mask, points_np, color=255)
+                cropped_mask = mask[ymin:ymax, xmin:xmax]
+                output_mask_path = output_labels_dir / f"{base_name}_{idx}.png"
+                cv2.imwrite(str(output_mask_path), cropped_mask)
 
-            out_img_path = output_images_dir / f"{base_name}_{i}.tif"
-            out_mask_path = output_labels_dir / f"{base_name}_{i}.tif"
-            Image.fromarray(cropped_img).save(out_img_path)
-            Image.fromarray(mask).save(out_mask_path)
-
-    print(f"Saved in: {output_images_dir.parent}")
-
+            except Exception as e:
+                print(f"❌ Błąd w pliku {label_path}, linia {idx}: {e}")
 
 xml_path = "../../data/annotations.xml"
 output_dir = "../../data/gland_polygons"
 data_dir = "../../data"
 
 if __name__ == "__main__":
-    extract_gland_polygons(xml_path, output_dir)
+    # extract_gland_polygons(xml_path, output_dir)
     prepare_unet_data(data_dir)
