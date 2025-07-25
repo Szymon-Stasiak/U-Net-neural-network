@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from unet_core.utils import load_checkpoint
 import os
 
-
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DoubleConv, self).__init__()
@@ -19,7 +18,6 @@ class DoubleConv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
-
 
 class UNet(nn.Module):
     def __init__(self, in_channels=3, out_channels=1, features=None):

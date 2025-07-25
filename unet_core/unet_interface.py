@@ -1,3 +1,5 @@
+import os
+
 import torch
 import numpy as np
 from unet_core.model import UNet as UNetArchitecture
@@ -5,7 +7,6 @@ from unet_core.train import train_process
 from PIL import Image
 import cv2
 from unet_core.img_processor import prepare_image, get_binary_mask, get_contours_from_mask
-
 
 class UNET:
     def __init__(self, device=None, img_height=256, img_width=256):

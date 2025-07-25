@@ -15,7 +15,6 @@ from unet_core.utils import (
     save_predictions_as_imgs,
 )
 
-
 def train_fn(loader, model, optimizer, loss_fn, scaler, device="cuda" if torch.cuda.is_available() else "cpu"):
     loop = tqdm(loader)
     for batch_idx, (data, targets) in enumerate(loop):
@@ -32,7 +31,6 @@ def train_fn(loader, model, optimizer, loss_fn, scaler, device="cuda" if torch.c
         scaler.update()
 
         loop.set_postfix(loss=loss.item())
-
 
 def train_process(
         train_img_dir="../data/shaped/images",
@@ -126,5 +124,4 @@ def train_process(
             save_predictions_as_imgs(val_loader, model, folder="saved_images/", device=device)
 
         model.train()
-
     return model

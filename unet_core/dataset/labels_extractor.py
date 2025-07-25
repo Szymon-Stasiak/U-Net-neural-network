@@ -1,34 +1,7 @@
-import xml.etree.ElementTree as ET
-import os
-import cv2
-import numpy as np
-from PIL import Image
-from pathlib import Path
-
-
-def extract_gland_polygons(xml_path, output_dir):
-    os.makedirs(output_dir, exist_ok=True)
-
-    tree = ET.parse(xml_path)
-    root = tree.getroot()
-
-    for image in root.iter("image"):
-        image_name = image.attrib.get("name")
-        base_name = os.path.splitext(image_name)[0]
-        output_file_path = os.path.join(output_dir, f"{base_name}.txt")
-
-        polygons = image.findall("polygon")
-        with open(output_file_path, "w") as f:
-            for polygon in polygons:
-                if polygon.attrib.get("label") == "gland":
-                    points = polygon.attrib.get("points")
-                    f.write(points + "\n")
-
-    print(f"Saved to file : {output_dir}")
-
 import cv2
 import numpy as np
 from pathlib import Path
+
 
 def prepare_unet_data(data_path):
     data_path = Path(data_path)
@@ -83,11 +56,3 @@ def prepare_unet_data(data_path):
 
             except Exception as e:
                 print(f"❌ Błąd w pliku {label_path}, linia {idx}: {e}")
-
-xml_path = "../../data/annotations.xml"
-output_dir = "../../data/gland_polygons"
-data_dir = "../../data"
-
-if __name__ == "__main__":
-    # extract_gland_polygons(xml_path, output_dir)
-    prepare_unet_data(data_dir)
