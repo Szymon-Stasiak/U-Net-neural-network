@@ -7,6 +7,7 @@ from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
 from unet_core.model import UNet
+import shutil
 from unet_core.utils import (
     load_checkpoint,
     save_checkpoint,
@@ -119,6 +120,11 @@ def train_process(
             save_checkpoint(checkpoint)
         else:
             print("No improvement in Dice score. Skipping checkpoint save.")
+
+        if (epoch + 1) % 50 == 0 and os.path.exists(checkpoint_path):
+            backup_path = f"my_checkpoint_epoch_{epoch + 1}.pth.tar"
+            shutil.copy(checkpoint_path, backup_path)
+            print(f"Checkpoint copied to {backup_path}")
 
         if save_predictions:
             save_predictions_as_imgs(val_loader, model, folder="saved_images/", device=device)

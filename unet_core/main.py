@@ -1,7 +1,7 @@
 from unet_interface import UNET
 
 if __name__ == '__main__':
-    unet = UNET(img_height=512, img_width=512)
+    unet = UNET(img_height=256, img_width=256)
     unet.set_model(in_channels=3, out_channels=1)
     # unet.set_model(in_channels=3, out_channels=1, name="my_checkpoint")
 
@@ -12,7 +12,7 @@ if __name__ == '__main__':
         val_mask_dir="../data/val/shaped/masks",
         learning_rate=1e-4,
         batch_size=16,
-        num_epochs=250,
+        num_epochs=150,
         num_workers=4,
         pin_memory=True,
         save_predictions=True
