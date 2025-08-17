@@ -1,4 +1,4 @@
-from unet_interface import UNET
+from  unet_core.unet_interface import UNET
 
 if __name__ == '__main__':
     unet = UNET(img_height=64, img_width=64)
