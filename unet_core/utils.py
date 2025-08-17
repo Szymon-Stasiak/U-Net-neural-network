@@ -14,9 +14,6 @@ def load_checkpoint(checkpoint, model, optimizer):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
-    # for param in model.parameters():
-    #     param.requires_grad = False
-    # model.eval()
 
 
 def get_loaders(train_img_dir, train_mask_dir, val_img_dir, val_mask_dir, batch_size=16, train_transform=None,
