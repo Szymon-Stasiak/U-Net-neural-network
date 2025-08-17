@@ -25,20 +25,4 @@ pip install -r requirements.txt
 ## Usage
 To use the U-Net model, you can import the `UNet` class from the `unet.py` file. You can create an instance of the model and specify the input channels and output classes.
 
-```python
-from unet import UNet
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torchvision.transforms as transforms
-from torchvision.datasets import VOCSegmentation
-from torch.utils.data import DataLoader
-from torchvision import transforms
-from torch.utils.data import DataLoader
-from torchvision.datasets import VOCSegmentation
 
-
-RANDOM README MADE BY AI 
-IT WILL BE UPDATED
-    
-    
