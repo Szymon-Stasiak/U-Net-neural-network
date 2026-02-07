@@ -1,28 +1,55 @@
-# U-Net Implementation
+# U-Net for Gland Detection in Pathomorphological Images
 
-This repository contains an implementation of the U-Net architecture for image segmentation tasks. The U-Net model is widely used in biomedical image segmentation and has shown great performance in various applications.
-The implementation is based on the original paper "U-Net: Convolutional Networks for Biomedical Image Segmentation" by Olaf Ronneberger, Philipp Fischer, and Thomas Brox.
-The model is implemented in PyTorch and includes training and evaluation scripts, as well as a sample dataset for testing purposes.
-The U-Net architecture consists of a contracting path (encoder) and an expansive path (decoder), allowing the model to capture both local and global features in the input images. The architecture is designed to work with images of arbitrary size and can be easily adapted for different segmentation tasks.
-## Table of Contents
-- [U-Net Implementation](#u-net-implementation)
-  - [Table of Contents](#table-of-contents)
-  - [Installation](#installation)
-  - [Usage](#usage)
-  - [Training](#training)
-  - [Evaluation](#evaluation)
-  - [Sample Dataset](#sample-dataset)
-  - [License](#license)
-  - [Acknowledgments](#acknowledgments)
-  - [Contributing](#contributing)
+This repository contains a specialized implementation of the U-Net architecture, adapted specifically for the semantic segmentation of glands in pathomorphological histology images.
+
+## Overview
+
+Accurate segmentation of glandular structures is a critical step in automated cancer grading and diagnosis. This project provides a streamlined, deep learning-based solution using the U-Net architecture, optimizing the original design for the specific textures and shapes found in histopathological tissue samples.
+
+## Architecture
+
+The model utilizes the classic U-Net "encoder-decoder" structure with skip connections to preserve spatial information, allowing for precise localization of gland boundaries.
+
+![U-Net Architecture](https://lmb.informatik.uni-freiburg.de/people/ronneber/u-net/u-net-architecture.png)
+*Figure 1: U-Net architecture (Ronneberger et al., 2015).*
+
+## Requirements
+
+* Python 3.8+
+* PyTorch
+* NumPy
+* Matplotlib (for visualization)
 
 ## Installation
-To install the required dependencies, you can use pip. Make sure you have Python 3.6 or higher installed.
+
+Clone the repository and install the dependencies:
 
 ```bash
+git clone [https://github.com/Szymon-Stasiak/U-Net-neural-network.git](https://github.com/Szymon-Stasiak/U-Net-neural-network.git)
+cd U-Net-neural-network
 pip install -r requirements.txt
 ```
 ## Usage
-To use the U-Net model, you can import the `UNet` class from the `unet.py` file. You can create an instance of the model and specify the input channels and output classes.
+The repository is focused purely on the model implementation. You can integrate the network into your training pipeline as follows:
 
 
+
+```python
+from unet_core.unet_interface import UNet
+from PIL import Image
+
+# 1. Initialize Model
+model = UNet(img_height=64, img_width=64)
+model.set_model(in_channels=3, out_channels=1, name="path/to/checkpoint")
+
+# 2. Inference
+image = Image.open("sample_patch.png")  # Input image (PIL format)
+contours = model.find_points(image)     # Returns list of contours
+
+print(f"Detected {len(contours)} gland structures.")
+
+```
+
+### Reference
+Original Paper: U-Net: Convolutional Networks for Biomedical Image Segmentation - Olaf Ronneberger, Philipp Fischer, and Thomas Brox.
+https://arxiv.org/abs/1505.04597
